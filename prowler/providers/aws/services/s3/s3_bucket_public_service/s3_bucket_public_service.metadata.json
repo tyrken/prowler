@@ -1,0 +1,32 @@
+{
+  "Provider": "aws",
+  "CheckID": "s3_bucket_public_service",
+  "CheckTitle": "Ensure that bucket policies do not over-trust AWS services without restrictions.",
+  "CheckType": [
+    "Effects/Data Exposure"
+  ],
+  "ServiceName": "s3",
+  "SubServiceName": "",
+  "ResourceIdTemplate": "arn:partition:s3:::bucket_name",
+  "Severity": "high",
+  "ResourceType": "AwsS3Bucket",
+  "Description": "This check verifies that S3 bucket policies are configured in a way that limits access to the intended AWS accounts only, preventing unauthorized access by external or unintended accounts.",
+  "Risk": "Allowing other AWS accounts to perform actions via AWS Services as 'confused deputies' can cause data leakage or impose additional costs.",
+  "RelatedUrl": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-policies.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review and update your S3 bucket policies to remove permissions that grant AWS services access unless they are restricted by a Condition limiting to a source account, org or orgpath",
+      "Url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/amazon-s3-policy-keys.html"
+    }
+  },
+  "Categories": [],
+  "DependsOn": [],
+  "RelatedTo": [],
+  "Notes": ""
+}

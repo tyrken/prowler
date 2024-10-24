@@ -223,6 +223,58 @@ def is_policy_public(
     return is_public
 
 
+def is_policy_allowing_confused_services(
+    policy: dict,
+    source_account: str = "",
+    is_cross_account_allowed=True,
+    # not_allowed_actions: list = [],
+) -> bool:
+    """
+    Check if the policy allows AWS services access to the resource without a suitable Condition.
+    If the policy gives access to an AWS service principal is considered public if the policy is not pair with conditions since it can be invoked by AWS services in other accounts.
+    Args:
+        policy (dict): The AWS policy to check
+        not_allowed_actions (list): List of actions that are not allowed, default: []. If not_allowed_actions is empty, the function will not consider the actions in the policy.
+    Returns:
+        bool: True if the policy allows public access, False otherwise
+    """
+    can_be_confused = False
+    if policy:
+        for statement in policy.get("Statement", []):
+            # Only check allow statements
+            if statement["Effect"] == "Allow":
+                principal = statement.get("Principal", "")
+                if isinstance(principal, dict) and (
+                    (  # Check if function can be invoked by other AWS services
+                        (
+                            ".amazonaws.com" in principal.get("Service", "")
+                            or ".amazon.com" in principal.get("Service", "")
+                            or "*" in principal.get("Service", "")
+                        )
+                    )
+                    and "secretsmanager.amazonaws.com"
+                    not in principal.get(
+                        "Service", ""
+                    )  # AWS ensures that resources called by SecretsManager are executed in the same AWS account
+                ):
+                    can_be_confused = not statement.get("Condition", {}) or (
+                        not is_condition_block_restrictive(
+                            statement.get("Condition", {}),
+                            source_account,
+                            is_cross_account_allowed,
+                        )
+                        and not is_condition_block_restrictive_organization(
+                            statement.get("Condition", {})
+                        )
+                        and not is_condition_restricting_from_private_ip(
+                            statement.get("Condition", {})
+                        )
+                    )
+                    if can_be_confused:
+                        break
+    return can_be_confused
+
+
 def is_condition_block_restrictive(
     condition_statement: dict,
     source_account: str = "",
